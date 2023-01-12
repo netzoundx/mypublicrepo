@@ -1,12 +1,13 @@
 #!/bin/bash
 
-echo "Please enter namespace"
+echo "Please enter namespace :"
 read NS
-echo "Please enter aws access key"
+echo "Please enter aws access key :"
 read AWS_ACCESS_KEY
-echo "Please enter aws secret key"
+echo "Please enter aws secret key :"
 read AWS_SECRET_KEY
-
+echo "Please enter ECR Registry :"
+read REGISTRY
 sudo kubectl get ns $NS
 if [ $? -eq 1 ]; then exit 1; fi
 
@@ -48,7 +49,7 @@ cat > gitlab-ecr-cronjob.yaml <<EOF
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: hello
+  name: gitlab-ecr-cronjob
 spec:
   schedule: "*/5 * * * *"
   jobTemplate:
@@ -56,6 +57,7 @@ spec:
       template:
         spec:
           serviceAccountName: gitlab
+          restartPolicy: OnFailure
           containers:
           - name: alpine-k8s
             image: alpine/k8s:1.26.0
@@ -63,13 +65,18 @@ spec:
             command:
             - /bin/sh
             - -c
-            - date; echo Hello from the Kubernetes cluster
-            env:
-              - name: AWS_ACCESS_KEY_ID
+            - |-
+              aws configure set aws_access_key_id $AWS_ACCESS_KEY
+              aws configure set aws_secret_access_key $AWS_SECRET_KEY
+              TOKEN=$(aws ecr get-login-password --region ap-southeast-1 --profile=paypay-love | cut -d' ' -f6)
+              
+
+               
+
 
 
       
-          restartPolicy: OnFailure
+
 
 
 
@@ -77,15 +84,6 @@ spec:
 
 
 EOF
-
-
-
-
-
-
-
-
-
 
 
 
