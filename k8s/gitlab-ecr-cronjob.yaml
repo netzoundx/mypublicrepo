@@ -1,0 +1,31 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: gitlab-ecr-cronjob
+spec:
+  schedule: "*/4 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: gitlab
+          restartPolicy: OnFailure
+          containers:
+          - name: alpine-k8s
+            image: alpine/k8s:1.26.0
+            imagePullPolicy: IfNotPresent
+            envFrom:
+            - secretRef:
+                name: ecr-generic-secret
+            command:
+            - /bin/sh
+            - -c
+            - |-
+              aws configure set aws_access_key_id $ACCESS_KEY
+              aws configure set aws_secret_access_key $SECRET_KEY
+              TOKEN=$(aws ecr get-login-password --region ap-southeast-1 | cut -d' ' -f6)
+              kubectl -n $NAMESPACE delete secret $SECRET --ignore-not-found
+              kubectl -n $NAMESPACE create secret docker-registry $SECRET \
+                --docker-server=$REGISTRY \
+                --docker-username=AWS \
+                --docker-password=$TOKEN
