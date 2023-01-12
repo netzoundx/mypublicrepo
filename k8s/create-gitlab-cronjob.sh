@@ -55,7 +55,7 @@ kind: CronJob
 metadata:
   name: gitlab-ecr-cronjob
 spec:
-  schedule: "*/4 * * * *"
+  schedule: "0 */11 * * *"
   jobTemplate:
     spec:
       template:
@@ -83,6 +83,7 @@ spec:
                 --docker-password=$TOKEN
 EOF
 # Create Secret for ECR
+sudo kubectl -n $NS delete secret ecr-generic-secret --ignore-not-found
 sudo kubectl -n $NS create secret generic ecr-generic-secret --from-literal=ACCESS_KEY=$AWS_ACCESS_KEY \
        --from-literal=SECRET_KEY=$AWS_SECRET_KEY \
        --from-literal=NAMESPACE=$NS \
